@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Scream Screen</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden;
+        background-color: #000;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      #start-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        color: #fff;
+        cursor: pointer;
+        padding: 24px;
+        text-align: center;
+      }
+
+      #start-screen .tap-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        animation: pulse 1.5s infinite;
+      }
+
+      #start-screen p {
+        font-size: 1.25rem;
+        letter-spacing: 1px;
+        opacity: 0.85;
+      }
+
+      #video-container {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background-color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      #end-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        background-color: #000;
+        color: #ff073a;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+        animation: fadeIn 0.4s ease-out;
+      }
+
+      #end-screen h1 {
+        font-size: clamp(2.5rem, 12vw, 4.5rem);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        line-height: 1.1;
+        text-shadow:
+          0 0 20px rgba(255, 7, 58, 0.8),
+          0 0 40px rgba(255, 7, 58, 0.5);
+        animation: glitch 1.2s infinite alternate;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.9;
+        }
+        50% {
+          transform: scale(1.15);
+          opacity: 0.5;
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes glitch {
+        0% {
+          transform: scale(1);
+          text-shadow: 0 0 20px rgba(255, 7, 58, 0.8);
+        }
+        50% {
+          transform: scale(1.03) skew(1deg);
+          text-shadow:
+            -2px 0 red,
+            2px 0 white,
+            0 0 30px rgba(255, 7, 58, 0.9);
+        }
+        100% {
+          transform: scale(1);
+          text-shadow: 0 0 20px rgba(255, 7, 58, 0.8);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="start-screen">
+      <div class="tap-icon">👆</div>
+      <p>Toca la pantalla</p>
+    </div>
+
+    <!-- Video -->
+    <div id="video-container">
+      <video
+        id="scream-video"
+        src="media/scream.mp4"
+        playsinline
+        webkit-playsinline
+        preload="auto"
+      ></video>
+    </div>
+
+    <!-- Pantalla final -->
+    <div id="end-screen">
+      <h1>DEJA EL CELULAR</h1>
+    </div>
+
+    <script>
+      const startScreen = document.getElementById("start-screen");
+      const endScreen = document.getElementById("end-screen");
+      const videoContainer = document.getElementById("video-container");
+      const video = document.getElementById("scream-video");
+
+      // Función para solicitar pantalla completa en navegadores móviles
+      function enterFullscreen() {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen().catch(() => {});
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        } else if (video.webkitEnterFullscreen) {
+          // Soporte para Safari en iOS
+          video.webkitEnterFullscreen();
+        }
+      }
+
+      // Iniciar experiencia al tocar la pantalla
+      function startExperience() {
+        startScreen.style.display = "none";
+        enterFullscreen();
+        video.currentTime = 0;
+        video.muted = false;
+        video.play().catch((err) => {
+          console.warn("Error al reproducir el video:", err);
+        });
+      }
+
+      startScreen.addEventListener("click", startExperience);
+      startScreen.addEventListener("touchstart", startExperience, {
+        passive: true,
+      });
+
+      // Evento al terminar el video
+      video.addEventListener("ended", () => {
+        // Ocultar video y mostrar mensaje final
+        videoContainer.style.display = "none";
+        endScreen.style.display = "flex";
+
+        // Vibrar si el dispositivo lo soporta (patrón de alerta)
+        if ("vibrate" in navigator) {
+          navigator.vibrate([200, 100, 200, 100, 400]);
+        }
+      });
+    </script>
+  </body>
+</html>
