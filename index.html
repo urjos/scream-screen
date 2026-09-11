@@ -174,42 +174,58 @@
       const videoContainer = document.getElementById("video-container");
       const video = document.getElementById("scream-video");
 
-      // Función para solicitar pantalla completa en navegadores móviles
+      let hasStarted = false;
+
       function enterFullscreen() {
-        const docEl = document.documentElement;
-        if (docEl.requestFullscreen) {
-          docEl.requestFullscreen().catch(() => {});
-        } else if (docEl.webkitRequestFullscreen) {
-          docEl.webkitRequestFullscreen();
-        } else if (video.webkitEnterFullscreen) {
-          // Soporte para Safari en iOS
-          video.webkitEnterFullscreen();
+        try {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) {
+            docEl.requestFullscreen().catch(() => {});
+          } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();
+          }
+        } catch (e) {
+          // Si falla o no está soportado (como en iOS), el CSS ya cubre toda la pantalla
         }
       }
 
-      // Iniciar experiencia al tocar la pantalla
-      function startExperience() {
+      function startExperience(e) {
+        if (hasStarted) return;
+        hasStarted = true;
+
+        // Ocultar pantalla de inicio
         startScreen.style.display = "none";
+
+        // Intentar pantalla completa sin bloquear la reproducción
         enterFullscreen();
-        video.currentTime = 0;
+
+        // Reproducir el video con audio
         video.muted = false;
-        video.play().catch((err) => {
-          console.warn("Error al reproducir el video:", err);
-        });
+        const playPromise = video.play();
+
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn("Intento con audio falló, reintentando:", err);
+            // Si el navegador bloqueó el audio, intentamos reproducir silenciado y luego reactivar audio
+            video.muted = true;
+            video.play().then(() => {
+              video.muted = false;
+            }).catch((fallbackErr) => {
+              console.error("Error definitivo al reproducir:", fallbackErr);
+            });
+          });
+        }
       }
 
-      startScreen.addEventListener("click", startExperience);
-      startScreen.addEventListener("touchstart", startExperience, {
-        passive: true,
-      });
+      // Usar pointerdown o click con { once: true } para evitar doble disparo en celulares
+      startScreen.addEventListener("pointerdown", startExperience, { once: true });
+      startScreen.addEventListener("click", startExperience, { once: true });
 
       // Evento al terminar el video
       video.addEventListener("ended", () => {
-        // Ocultar video y mostrar mensaje final
         videoContainer.style.display = "none";
         endScreen.style.display = "flex";
 
-        // Vibrar si el dispositivo lo soporta (patrón de alerta)
         if ("vibrate" in navigator) {
           navigator.vibrate([200, 100, 200, 100, 400]);
         }
